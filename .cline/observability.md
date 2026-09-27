@@ -152,8 +152,34 @@
 - GitHub API (`/users/Georgie07876`): login `Georgie07876`, id `113280545` ⇒ noreply-адрес `113280545+Georgie07876@users.noreply.github.com`.
 
 **Как есть сейчас**
-- SSH-доступ работает. Осталось: решить вопрос `user.email` (атрибуция коммитов), затем `git push -u origin main`, создать и запушить `dev`.
+- `main` и `dev` запушены пользователем и синхронизированы с origin (`617c4bb`); автор коммита — `Georgie07876 <113280545+Georgie07876@users.noreply.github.com>` (вариант B).
 - Приватный ключ не читался и нигде не печатался; в браузере GitHub пользователь добавил ключ сам.
+
+## 2026-09-27 — сессия 8: коммит журнала + трек и исполнитель в плеере
+
+**Как было**
+- `.cline/observability.md` был изменён и не закоммичен на ветке `dev`.
+- В `app/components/GlobalPlayer.vue` лежала **незакоммиченная попытка пользователя**: `const playerStore = usePlayerStore()` в скрипте и текст трека **внутри** `.global-player__timeline` (`<p class="global-player__timeline-text" v-if="playerStore.currentTrack">`). Логика верная, но таймлайн — высотой `1rem` с `overflow: hidden` и `border-radius: 999px`, поэтому текст не виден; класса `.global-player__timeline-text` в стилях не было вовсе.
+
+**Что сделал**
+1. Коммит журнала: `git add .cline/observability.md` → `docs(cline): log git push diagnosis and ssh fix` → `git push` (`617c4bb..2a85138 dev -> dev`).
+2. `app/components/GlobalPlayer.vue` (запрос: «выводить текущий играющий трек из store и исполнителя в плеере после play по треку»):
+   - добавлен ряд `.global-player__top` (grid `1fr auto 1fr`): слева `.global-player__now` (title + artist), в центр — `<PlayerControls class="global-player__controls" />`;
+   - у `PlayerControls` появился класс-однофамилец и правило `.global-player__controls { grid-column: 2 }` — контролы остаются по центру и при пустом сторе, и при выбранном треке (без «прыжка» разметки);
+   - текст убран из таймлайна, элемент `.global-player__timeline-text` удалён;
+   - стили `.global-player__now/__title/__artist` (ellipsis, приглушённый артист); авторская строка `const playerStore = usePlayerStore()` оставлена.
+
+**Что произошло (проверки)**
+- SFC-проверка `GlobalPlayer.vue` → `parse errors: 0`, `template errors: 0`.
+- SSR `GET /` → `status: 200`; маркеры `global-player__top`, `global-player__controls`, `global-player__row`, `global-player__timeline`, `app-footer`; `global-player__now` в SSR **отсутствует** (трек не выбран) — ожидаемо верно.
+- CSS-модуль `/_nuxt/components/GlobalPlayer.vue?vue&type=style&index=0&lang.css` → 200, 8673 б, содержит `global-player__now`, `global-player__title`, `grid-template-columns: 1fr auto 1fr`.
+- JS-модуль `/_nuxt/components/GlobalPlayer.vue` → 200, 10831 б, содержит `currentTrack` и `usePlayerStore`.
+- Интерактив (клик Play → появился текст) автоматически не проверяется: браузера и тест-тулинга нет. Проверяет пользователь.
+
+**Как есть сейчас**
+- Плеер показывает `title` и `artist` из `playerStore.currentTrack` после клика Play на карточке (`/` или `/search`).
+- Правка компонента не закоммичена — ждёт решения пользователя.
+
 
 
 

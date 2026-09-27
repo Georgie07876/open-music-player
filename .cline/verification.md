@@ -62,6 +62,7 @@ foreach ($h in $hrefs) { $c = Invoke-WebRequest ('http://localhost:3000' + $h) -
 ```
 
 Адрес модуля стилей SFC в dev: `/_nuxt/<путь файла от корня Vite>?vue&type=style&index=0&lang.css`, например `/_nuxt/layouts/default.vue?vue&type=style&index=0&lang.css` для `app/layouts/default.vue`.
+JS-модуль того же компонента лежит рядом: `/_nuxt/<путь от каталога `app/`>` — например `/_nuxt/components/GlobalPlayer.vue` (проверено: 200, в теле есть `usePlayerStore` и `currentTrack`). Оба адреса отдают dev-сервер напрямую, без авторизации.
 Критерий: `status: 200` и в теле — актуальное правило (например `position: sticky`).
 Доказывает: браузер получает именно эти CSS-правила. Не доказывает: как браузер их применит при скролле — это смотрит пользователь.
 
