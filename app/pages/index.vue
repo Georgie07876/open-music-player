@@ -1,7 +1,6 @@
 <template>
   <section>
     <h1>Home</h1>
-    <p>Mock trending tracks. No API yet.</p>
     <p v-if="pending">Loading…</p>
     <p v-else-if="error">Could not load tracks.</p>
     <p v-else>{{ lastAction }}</p>
