@@ -17,6 +17,7 @@ interface AudiusListResponse {
 }
 
 const playerStore = usePlayerStore();
+const favoritesStore = useFavoritesStore();
 const config = useRuntimeConfig();
 const {
   data: raw,
@@ -46,7 +47,11 @@ function onPlay(track: Track) {
 }
 
 function onFavorite(track: Track) {
-  lastAction.value = `Favorite: ${track.title}`;
+  const wasFavorite = favoritesStore.isFavorite(track.id);
+  favoritesStore.toggle(track);
+  lastAction.value = wasFavorite
+    ? "Removed from favorites"
+    : "Added to favorites";
 }
 
 function toTrack(raw: any): Track {

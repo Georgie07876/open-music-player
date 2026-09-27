@@ -1,7 +1,3 @@
-<script setup lang="ts">
-const playerStore = usePlayerStore();
-</script>
-
 <template>
   <div class="global-player">
     <div class="global-player__top">
@@ -53,6 +49,10 @@ const playerStore = usePlayerStore();
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+const playerStore = usePlayerStore();
+</script>
 
 <style scoped>
 .global-player {
