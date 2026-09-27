@@ -107,4 +107,55 @@
 - CSS-правила подтверждены в отдаваемом браузеру стилевом модуле: `.app-header { position: sticky; top: 0; z-index: 10; background: #fff }` (status 200). Метод добавлен в `verification.md` как проверка 2b. Визуальный скролл — за пользователем.
 
 
+## 2026-09-27 — сессия 6: диагностика `git push` (только чтение, правок нет)
+
+**Как было (симптом)**
+- `git commit` прошёл: root-commit `b4ea7c4`, 36 файлов. Но `git push -u origin main` дал две разные ошибки:
+  1) `error: src refspec main does not match any` (до `git branch -M main`);
+  2) после переименования ветки: `remote: Invalid username or token. Password authentication is not supported for Git operations.` → `fatal: Authentication failed`.
+- Гипотеза пользователя: «нужно настроить SSH».
+
+**Что сделал (только чтение; ни конфиг git, ни remote, ни ключи не трогал)**
+- `git remote -v` → `origin https://github.com/Georgie07876/open-music-player.git` (HTTPS).
+- `git branch -vv` → `main b4ea7c4 first commit`; рабочее дерево чистое.
+- `git config --show-origin --get-all credential.helper` → `manager` (Git Credential Manager 2.8.0 из `C:/Program Files/Git/etc/gitconfig`).
+- `cmdkey /list | Select-String github` → пусто: сохранённых креденшелов нет.
+- `git credential fill` (с `GCM_INTERACTIVE=never`, `GIT_TERMINAL_PROMPT=0`) → `fatal: could not read Username` ⇒ готового креденшела нет, промпт отключён.
+- `git -c credential.helper= ls-remote <https-url>` → exit 0 без ссылок ⇒ репозиторий существует, **публичный и пустой**.
+- `ssh -T -o BatchMode=yes git@github.com` → `Permission denied (publickey)`; в `~/.ssh` только `known_hosts`; служба `ssh-agent` — `Stopped / Disabled`; `gh` не установлен; ssh-клиент OpenSSH 9.5p2 есть.
+- `git config --global user.name/user.email` → `Name your mom` / `zazazazazazazajdfiu@mail.ru` (мусорные значения; этим подписан коммит).
+
+**Что произошло (выводы)**
+- Ошибка 1 — рассинхрон имён веток: коммит создан на `master` (нет `init.defaultBranch`), пушили `main`. Пользователь исправил сам (`git branch -M main`).
+- Ошибка 2 — аутентификация: HTTPS-пуш требует токен или SSH-ключ, GitHub не принимает пароль. SSH-гипотеза верна по сути, но на машине **вообще нет ключей** и агент выключен.
+- Репозиторий пустой и публичный ⇒ после настройки доступов пуш пройдёт без force и без merge.
+
+**Как есть сейчас**
+- Ничего не изменено. Пользователю предложены три пути (SSH / PAT / gh CLI) с точными командами и отмечено, что локальную часть могу выполнить по его слову.
+- Отдельно помечено: `user.name`/`user.email` — мусорные, коммит подписан ими; стоит поправить до пуша (`git commit --amend --reset-author`).
+
+## 2026-09-27 — сессия 7: SSH починен, git пошёл через Windows OpenSSH
+
+**Как было (симптом)**
+- После `git remote set-url origin git@github.com:...` команда `git ls-remote origin` падала: `Could not create directory '/c/Users/\303\345\356\360\343\350\351/.ssh' (No such file or directory)` → `git@github.com: Permission denied (publickey)`.
+
+**Что сделал**
+- Диагностика: ключ `C:\Users\Георгий\.ssh\id_ed25519` (+ `.pub`, создан в 14:18) существует; `ssh` в PATH = `C:\Windows\System32\OpenSSH\ssh.exe` (кириллицу в пути понимает), но `git` по умолчанию вызывает `C:\Program Files\Git\usr\bin\ssh.exe` (MSYS), который ломается на не-ASCII имени профиля (`\303\345\356\360\343\350\351` = UTF-8 «Георгий» в мусорной кодировке), поэтому `~/.ssh` для него не существует.
+- `core.sshCommand`, `GIT_SSH`, `GIT_SSH_COMMAND` были пусты, `HOME` — пуст.
+- Применил: `git config --global core.sshCommand "C:/Windows/System32/OpenSSH/ssh.exe"`. Откат: `git config --global --unset core.sshCommand`.
+
+**Что произошло (проверки)**
+- `ssh -T -o BatchMode=yes git@github.com` → `Hi Georgie07876! You've successfully authenticated, but GitHub does not provide shell access.` (exit 1 — это норма).
+- `git ls-remote origin` (с `GIT_SSH_COMMAND=<ssh> -o BatchMode=yes`) → `exit: 0`, вывод пуст ⇒ доступ работает, репозиторий пустой.
+- Отпечаток ключа: `SHA256:kgLjJ1wzEg2mi11Wc4yqcgfGApebfT1LTxOnF7f5PpU home-pc-win11 (ED25519)`.
+- Состояние git: коммит `982b5dd`, автор `Georgie07876 <zazazazazazazazajdfiu@mail.ru>`; локально только `main`, на remote ветвей нет, пуш ещё не выполнялся; в рабочем дереве некоммитнутая правка `.cline/observability.md`.
+- GitHub API (`/users/Georgie07876`): login `Georgie07876`, id `113280545` ⇒ noreply-адрес `113280545+Georgie07876@users.noreply.github.com`.
+
+**Как есть сейчас**
+- SSH-доступ работает. Осталось: решить вопрос `user.email` (атрибуция коммитов), затем `git push -u origin main`, создать и запушить `dev`.
+- Приватный ключ не читался и нигде не печатался; в браузере GitHub пользователь добавил ключ сам.
+
+
+
+
 
