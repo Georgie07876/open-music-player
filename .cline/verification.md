@@ -85,6 +85,18 @@ Get-ChildItem app -Force | Select-Object Name,Length
 
 Критерий: появились только файлы заявленного объёма; временные скрипты удалены; чужие файлы не тронуты (сверить даты/состав до и после).
 
+## 4b. Runtime-тест стора (поведение, а не «выглядит правильно»)
+
+Скрипт: `.cline/checks/player-store.check.mjs`. Запуск:
+
+```powershell
+node .cline/checks/player-store.check.mjs
+```
+
+Что делает: компилирует `app/stores/player.ts` через esbuild → пишет временный `.check-store.transformed.tmp.mjs` в корень проекта → объявляет `globalThis.defineStore` (настоящий из `pinia`, потому что в Nuxt он автоимпортируется и в чистом node не существует) → импортирует модуль → создаёт Pinia и проверяет фактические значения, печатая `PASS/FAIL`.
+Критерий: `ALL CHECKS PASSED`, exit code `0`, временный файл удалён.
+Замечания: `transformWithEsbuild` в Vite 7 помечен deprecated (`transformWithOxc`) — предупреждение безвредно; esbuild нормализует литералы (`0.8` → `.8`), поэтому не проверяйте отданный код строками вида `volume: 0.8` — строковая проверка даст ложный `False`.
+
 ## 5. Что доказательством НЕ считается
 
 - «Код выглядит правильно», «должно работать».
