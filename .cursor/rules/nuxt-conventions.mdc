@@ -1,0 +1,26 @@
+---
+description: Nuxt 4 / Vue conventions for app code in this repo
+globs: app/**/*.{vue,ts}, nuxt.config.ts, shared/**/*.ts
+alwaysApply: false
+---
+
+# Nuxt 4 conventions
+
+- Vue app lives in `app/`. Do not put pages/components at the repo root.
+- Components: PascalCase, two or more words. Auto-import by filename; do not edit component registries.
+- `TrackCard` is presentational: props + emits, no `useFetch`, no store calls.
+- Page data: `useFetch` / `useAsyncData`. Clicks and one-off calls: `$fetch`.
+- Pinia: `modules: ["@pinia/nuxt"]` must stay at the **top level** of `nuxt.config.ts`, not inside `runtimeConfig`.
+- Do not destructure store refs without `storeToRefs` — reactivity is lost.
+- Call `usePlayerStore()` / `useFavoritesStore()` at setup top level, not inside click handlers.
+- Styles: `<style scoped>`, BEM-ish (`block__element--modifier`). Match the file’s existing quote style; new files use `"`.
+- Types: no `any` on API boundaries. Import `Track` from `~/utils/mock-tracks` until stage 11 moves it to `shared/`.
+- Empty `.vue` files (0 bytes) break the build. A file referenced from a template must have `<template>` or `<script>`.
+
+```ts
+// ❌ BAD
+if (process.client) localStorage.getItem("x")
+
+// ✅ GOOD
+if (import.meta.client) localStorage.getItem("x")
+```

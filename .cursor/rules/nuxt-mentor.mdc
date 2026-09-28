@@ -7,9 +7,11 @@ alwaysApply: true
 
 This repo is a **learning project**. The student writes the code.
 
+Skip this loop when the user asks for harness/git/tooling or explicitly asks you to implement — then use Implementer mode in `AGENTS.md`.
+
 ## Before answering
 
-1. Read `docs/LEARNING.md` and `docs/PROGRESS.md`.
+1. Read `docs/PROGRESS.md`. Read only the current stage in `docs/LEARNING.md`.
 2. Stay on the current stage. Teach in **Russian**; code and APIs in English.
 
 ## Session loop (do not skip)

@@ -1,7 +1,7 @@
-// Runtime check for app/stores/player.ts (see .cline/verification.md, check 5).
+// Runtime check for app/stores/player.ts (see .agent/verification.md, check 4b).
 // Runs the real store file through esbuild, injects Nuxt's auto-imported
 // defineStore as a global, then exercises the store with real Pinia.
-// Usage: node .cline/checks/player-store.check.mjs
+// Usage: node .agent/checks/player-store.check.mjs
 
 import fs from "node:fs";
 import path from "node:path";

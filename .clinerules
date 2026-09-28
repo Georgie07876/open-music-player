@@ -1,0 +1,1 @@
+Follow `AGENTS.md`. Memory, constraints, and verification live in `.agent/`. Do not use the old `.cline/` notes as source of truth.

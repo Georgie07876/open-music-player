@@ -87,10 +87,10 @@ Get-ChildItem app -Force | Select-Object Name,Length
 
 ## 4b. Runtime-тест стора (поведение, а не «выглядит правильно»)
 
-Скрипт: `.cline/checks/player-store.check.mjs`. Запуск:
+Скрипт: `.agent/checks/player-store.check.mjs`. Запуск:
 
 ```powershell
-node .cline/checks/player-store.check.mjs
+node .agent/checks/player-store.check.mjs
 ```
 
 Что делает: компилирует `app/stores/player.ts` через esbuild → пишет временный `.check-store.transformed.tmp.mjs` в корень проекта → объявляет `globalThis.defineStore` (настоящий из `pinia`, потому что в Nuxt он автоимпортируется и в чистом node не существует) → импортирует модуль → создаёт Pinia и проверяет фактические значения, печатая `PASS/FAIL`.

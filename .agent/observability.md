@@ -199,6 +199,24 @@
 - Всё закоммичено и запушено в `dev` (`origin/dev` = `cf0da40`): `ef69d50` — store (очередь + volume), `2e8b719` — `.cline` (тест стора + заметки), `cf0da40` — правка пользователя в `app/pages/index.vue`. Рабочее дерево чистое.
 - `origin/main` пока на `617c4bb` — слияние `dev → main` не делалось (по процессу: через Pull Request).
 
+## 2026-09-28 — harness L2 (Cursor + portable agents)
+
+**Как было**
+- Одна always-on менторская правило, плюс папка `.cline/` с дублем плана курса, расплывчатой ролью Cline и опечатками (`.clibne`). Нет `AGENTS.md`, нет scoped rules, нет skills/commands. Контекст копился и расходился с `docs/`.
+
+**Что сделал**
+- `AGENTS.md` — вход для Cursor / Cline / Codex. Два режима: Mentor / Implementer.
+- `.cursor/rules`: mentor (always), guardrails (always, коротко), conventions (globs на `app/`).
+- Skills `mentor-session` и `implementer`; команды `/continue` и `/implement`.
+- Память и проверки перенесены в `.agent/` (`decisions.md` вместо копипасты LEARNING). `.cline/` оставлен как указатель.
+
+**Что произошло (проверки)**
+- Файлы на месте; продукт (`app/`) не менялся. Это tooling, не фича плеера.
+
+**Как есть сейчас**
+- Новый чат на любом ПК читает git-harness, а не «как получится из промпта».
+- Не подключены MCP, RAG, eval-фреймворк — рано для размера репо.
+
 
 
 
