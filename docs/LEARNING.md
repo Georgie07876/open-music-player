@@ -417,9 +417,9 @@ favoritesStore: ids / tracks
 
 ### Definition of done
 
-- [ ] Play с карточки меняет текущий трек в store
-- [ ] Избранное доступно на `/favorites`
-- [ ] Ты объяснил, почему громкость не `useFetch`, а store
+- [x] Play с карточки меняет текущий трек в store
+- [x] Избранное доступно на `/favorites`
+- [x] Ты объяснил, почему громкость не `useFetch`, а store
 
 ### Checkpoint
 

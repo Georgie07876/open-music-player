@@ -6,9 +6,9 @@
 
 | Поле | Значение |
 | --- | --- |
-| Этап | **6 — состояние приложения** (этап 5 закрыт) |
-| Статус этапа | Срез 6.1 «плеер» закрыт. Дальше срез 6.2 — избранное в памяти |
-| Следующий шаг | Ученик: предплан файлов для favorites store. Код после сверки |
+| Этап | **7 — Persistence и browser APIs** (этап 6 закрыт) |
+| Статус этапа | Не начат. После разбора иерархии emit → layout |
+| Следующий шаг | По команде продолжить: теория cookie vs localStorage + избранное переживает F5 |
 | Язык обучения | Русский, код на английском |
 | Tailwind | Не установлен и не в стартовом стеке. Появляется только на этапе 14 |
 
@@ -17,13 +17,18 @@
 - Layout, страницы `/`, `/search`, `/track/[id]`, `/favorites`, `/playlists`
 - Данные треков с **Audius** через `useFetch` (trending, search, track by id)
 - `toTrack` пока дублируется на страницах
-- Play → `playerStore.playTrack(track)` (карточка → список → `/` и `/search` → store)
-- `playTrack` ставит `currentTrack`, `isPlaying` и кладёт трек в `queue`, если его там нет
-- `GlobalPlayer` читает `currentTrack` (title/artist). `PlayerControls` пока без логики
-- Favorite по-прежнему текст на странице; стора избранного нет
+- Play / Favorite: карточка → TrackList → `/`, `/search`, `/favorites` → player/favorites store
+- `useFavoritesStore.tracks`, toggle, `isFavorite`. Без localStorage
 - `/track/[id]` без кнопки Play
 
 ## Журнал сессий
+
+### 2026-09-28 — checkpoint этапа 6
+
+- громкость/трек не useFetch: не JSON с API — верно
+- очередь не в GlobalPlayer: emit не доходит до соседа в layout — верно; F5 тут ни при чём
+- поиск без Pinia — верно
+- Этап 6 закрыт
 
 ### 2026-09-28 — harness L2 (не этап курса)
 
@@ -83,7 +88,7 @@
 - [x] 3. Routing и layout
 - [x] 4. Внешний API и data fetching
 - [x] 5. SSR и hydration
-- [ ] 6. Состояние приложения
+- [x] 6. Состояние приложения
 - [ ] 7. Persistence и browser APIs
 - [ ] 8. Настоящий плеер
 - [ ] 9. Composables и архитектура
@@ -117,8 +122,9 @@
 - Почему `TrackCard` не ходит в API сам?
 - Чем ответ search отличается от track by id?
 - Чем `NuxtLink` отличается от `<a href>`?
-- Почему плеер будет в layout?
+- Почему очередь не хранить только в `GlobalPlayer`?
+- Почему громкость не `useFetch`?
 
 ## Как продолжить в новом чате
 
-> Начинаем этап 6. Смотри `docs/PROGRESS.md`.
+> Начинаем этап 7. Смотри `docs/PROGRESS.md`.

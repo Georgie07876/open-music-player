@@ -3,14 +3,9 @@
     <h1>Search</h1>
     <SearchInput v-model="query" />
     <p v-if="pending">Loading…</p>
-    <p v-if="error">Could not load tracks.</p>
-    <p v-else-if="lastAction">{{ lastAction }}</p>
-    <TrackList
-      v-else="!pending && !error"
-      :tracks="tracks"
-      @play="onPlay"
-      @favorite="onFavorite"
-    >
+    <p v-else-if="error">Could not load tracks.</p>
+    <p v-else>{{ lastAction }}</p>
+    <TrackList :tracks="tracks" @play="onPlay" @favorite="onFavorite">
       <template #empty> No tracks match “{{ query }}”. </template>
     </TrackList>
   </section>
@@ -38,6 +33,7 @@ const query = computed({
 });
 
 const route = useRoute();
+const favoritesStore = useFavoritesStore();
 
 const config = useRuntimeConfig();
 const {
@@ -66,7 +62,11 @@ function onPlay(track: Track) {
 }
 
 function onFavorite(track: Track) {
-  lastAction.value = `Favorite: ${track.title}`;
+  const wasFavorite = favoritesStore.isFavorite(track.id);
+  favoritesStore.toggle(track);
+  lastAction.value = wasFavorite
+    ? "Removed from favorites"
+    : "Added to favorites";
 }
 
 function toTrack(raw: any): Track {
