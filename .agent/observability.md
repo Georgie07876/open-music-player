@@ -217,6 +217,37 @@
 - Новый чат на любом ПК читает git-harness, а не «как получится из промпта».
 - Не подключены MCP, RAG, eval-фреймворк — рано для размера репо.
 
+## 2026-10-01 — рабочая машина: диагностика окружения + этап 7, срез 1 (ментальная сессия)
+
+**Как было**
+- Проект перенесён с домашней машины на рабочую, `npm install` сделан, но данные с API не приходили, а с включённым VPN сайт отдавал `ERR_CONNECTION_REFUSED`. Пользователь подозревал код/ключ API.
+
+**Что сделал**
+- Только чтение и диагностика. Код продукта **не менял**: правку `nuxt.config.ts` пользователь отклонил.
+- Изменены только заметки: `docs/PROGRESS.md` (позиция курса, журнал, решения, банк вопросов, «как продолжить»); `.agent/decisions.md` (persistence + окружение + ловушки); `.agent/verification.md` (рецепт проверки persistence).
+- Провёл менторскую сессию среза 7.1: теория → пересказ → две итерации плана → ТЗ.
+
+**Что произошло (проверки: команда → результат)**
+- `Get-NetTCPConnection -LocalPort 3000` → `::1` LISTENING, PID 34688 (`nuxi dev`, старт 10:26).
+- `127.0.0.1:3000` → «target machine actively refused»; TCP на `::1` не проходит даже к другим живым слушателям (`::1:42050`), а `127.0.0.1:65529/54112/62473` → OK.
+- `ping -6 ::1` → **General failure** (100 % loss). `Get-NetRoute -AddressFamily IPv4` → `0.0.0.0/0` через `happ-xray` с метрикой 0; у `happ-xray` `IPv6Connectivity: NoTraffic`.
+- `node -e "dns.lookup('api.audius.co')"` → 8.6.112.0 / 8.47.69.0; `node -e "fetch(...trending...)"` → **HTTP 200 за 889 мс** (через туннель).
+- `https://api.audius.co/v1/tracks/trending` без параметров → 200, 650 КБ; с мусорным `public_Key` → 200; заголовок `access-control-allow-origin: *`.
+- `https://api.audius.co/v1/tracks?id=…` → **403** (пакетного запроса по id нет).
+- Прокси: `ProxyEnable=0`, `netsh winhttp show proxy` → Direct access, env-proxy нет. Файрвол включён, но причина не в нём.
+- Исходники (точечно, для доказательства поведения): `nuxt/dist/app/entry.js` (порядок `applyPlugins` → `mount` → `app:mounted`), `pinia/dist/pinia.js` (`detached`/`getCurrentScope`, `$subscribeOptions = { deep: true }`), `@vue/runtime-core` (`scope.stop()` при unmount, `injectHook` warn вне setup), `nuxt/dist/app/components/nuxt-layout.js` (key = имя layout).
+- `.nuxt/`: `imports.d.ts` → только `useFavoritesStore`; `types/plugins.d.ts` → `favorites` отсутствует; поиск `plagins` по всему `.nuxt/` → **ни одного совпадения**.
+
+**Как есть сейчас**
+- Диагноз рабочей машины: (1) Nitro слушает только `::1`, а VPN ломает IPv6-loopback → браузер не доходит до дев-сервера; (2) без VPN сеть офиса не пускает на `api.audius.co`. Код и ключ API ни при чём.
+- Обход: `npm run dev -- --host 127.0.0.1`, адрес `http://127.0.0.1:3000`.
+- Срез 7.1 не закрыт: `app/composables/useFavorites.ts` и `app/plagins/favorites.client.ts` (папка с опечаткой, Nuxt её не видит) существуют, но по 0 байт; код не написан; DoD не проверялся.
+- `git status`: `M docs/PROGRESS.md`, `M .agent/*`, `M package-lock.json` (след `npm install`), `?? app/composables/`, `?? app/plagins/`.
+
+**Открытые вопросы**
+- Переименует ли пользователь `app/plagins/` в `app/plugins/` сам (я `app/**` не трогал) — иначе плагин молча не подключится.
+- Дома IPv6-loopback, вероятно, жив, поэтому `--host` там может быть не нужен; проверить при первом запуске.
+
 
 
 
