@@ -16,6 +16,7 @@ Read this instead of reconstructing history. Add a line when a choice is made; d
 ## Stack
 
 - Package manager: **npm**.
+- Tooling order (2026-10-01): CI (typecheck + build) and ESLint+Husky before the audio player. Storybook after composable boundaries (stage 9.1). Docker image at deploy (16.1). Mongo only with server-side favorites (stage 17), not before Nitro and `Track`.
 - Tailwind: stage 14 only. Until then: scoped CSS, BEM-ish classes.
 - Pinia module: top-level `modules` in `nuxt.config.ts`, never nested in `runtimeConfig`.
 - After config/module edits: `npx nuxi prepare` (or `npm run dev`) and restart the TS server if Volar is stale.

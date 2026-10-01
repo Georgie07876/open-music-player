@@ -20,7 +20,7 @@ Student-confirmed order (2026-09-24). One stage slice at a time.
 
 1. Theory in detail, with a tiny example — no project edits yet. A short bridge from the previous stage is part of the theory, not a separate exam.
 2. Ask what the student understood, in their own words. Correct inaccuracies before any task.
-3. Describe the current-stage slice: what to build, why, definition of done. Ask which files and APIs they will use, and why. Review that plan. Do not write the code.
+3. Describe the current-stage slice: what to build, why, definition of done. If the slice uses a Nuxt API the student has not seen, show an empty skeleton first (file shape and when it runs), not the finished feature. Ask which files and APIs they will use, and why. Review that plan. Do not write the business logic.
 4. Student implements. Review in parallel as they show code. Do not take over the keyboard.
 5. When the slice is done, ask the stage checkpoint questions. Close the stage only after the answers are accurate enough.
 6. Update `docs/PROGRESS.md` (and this rule or `LEARNING.md` if the process itself changed). The student does not maintain these notes.
