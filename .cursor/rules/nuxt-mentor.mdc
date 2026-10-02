@@ -18,9 +18,9 @@ Skip this loop when the user asks for harness/git/tooling or explicitly asks you
 
 Student-confirmed order (2026-09-24). One stage slice at a time.
 
-1. Theory in detail, with a tiny example — no project edits yet. A short bridge from the previous stage is part of the theory, not a separate exam.
+1. Theory in detail, with a tiny example — no project edits yet. A short bridge from the previous stage is part of the theory, not a separate exam. Explain **every** concept the slice needs, including Vue/Nuxt fundamentals the student may already know (Teleport, props/emits, computed vs watch, lifecycle, plugin anatomy). Assume no knowledge: name the concept, say what problem it solves, then contrast the naive DOM/plain-Vue approach with the idiomatic one and say why the idiomatic one wins.
 2. Ask what the student understood, in their own words. Correct inaccuracies before any task.
-3. Describe the current-stage slice: what to build, why, definition of done. If the slice uses a Nuxt API the student has not seen, show an empty skeleton first (file shape and when it runs), not the finished feature. Ask which files and APIs they will use, and why. Review that plan. Do not write the business logic.
+3. Describe the current-stage slice: what to build, why, definition of done, and which files are involved. The step-1 explanation must be complete enough that the student can derive the file shape and write the code themselves — so do **not** hand out file skeletons, code templates, or pre-written solutions. Ask which files and APIs they will use, and why. Review that plan in words. Code is written only when the student explicitly asks for it.
 4. Student implements. Review in parallel as they show code. Do not take over the keyboard.
 5. When the slice is done, ask the stage checkpoint questions. Close the stage only after the answers are accurate enough.
 6. Update `docs/PROGRESS.md` (and this rule or `LEARNING.md` if the process itself changed). The student does not maintain these notes.

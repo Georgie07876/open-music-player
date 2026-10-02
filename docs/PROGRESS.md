@@ -7,8 +7,9 @@
 | Поле | Значение |
 | --- | --- |
 | Этап | **7.2 — CI** (этапы 1–7 и срез persistence закрыты) |
-| Статус этапа | В плане. Кода пайплайна нет |
-| Следующий шаг | Теория CI, затем пайплайн: `npm ci`, типы, `nuxt build` |
+| Статус этапа | Теория разобрана, инструменты стоят, драфт workflow разобран на ошибках. Файлов пайплайна ещё нет |
+| Следующий шаг | Создать `.nvmrc` + `engines`, написать `.github/workflows/*.yml`, строку в `README`; пуш → run → проверить красный на намеренно сломанном типе |
+| Toolchain | Node **24.18.0** (nvm-windows, переключение вручную). Nuxt 4.5.2 требует `^22.19.0 \|\| ^24.11.0 \|\| >=26.0.0` — на Node 20.19.0 был `EBADENGINE`. devDependencies: `typescript@^5.9.3`, `vue-tsc@^3.3.12`. `npm run typecheck` — зелёный |
 | Дев-сервер | Nitro слушает только `localhost` → `[::1]`. Если IPv6-loopback недоступен (рабочий VPN), запускать `npm run dev -- --host 127.0.0.1` и открывать `http://127.0.0.1:3000` |
 | Язык обучения | Русский, код на английском |
 | Tailwind | Не установлен и не в стартовом стеке. Появляется только на этапе 14 |
@@ -19,11 +20,23 @@
 - Данные треков с **Audius** через `useFetch` (trending, search, track by id)
 - `toTrack` пока дублируется на страницах
 - Play / Favorite: карточка → TrackList → `/`, `/search`, `/favorites` → player/favorites store
-- `useFavoritesStore.tracks`, toggle, `isFavorite`. **Без localStorage** — срез 7.1 не сделан
-- Заготовки под срез 7.1: `app/composables/useFavorites.ts` (0 байт) и `app/plagins/favorites.client.ts` (0 байт). Папка `plagins` — опечатка (нужно `plugins`), Nuxt её не сканирует
+- `useFavoritesStore.tracks`, toggle, `isFavorite` — владелец домена; persistence избранного в `useFavorites()` + `plugins/favorites.client.ts`, ключ `omp:favorites:v1`
+- Избранное переживает F5; компоненты о `localStorage` не знают. Долг: значение `Track[]` — снапшот, цель — ids + batch (этапы 10–11)
 - `/track/[id]` без кнопки Play
+- `npm run typecheck` (= `nuxt typecheck`); в `devDependencies` появились `typescript`, `vue-tsc` — до этапа 7.2 блока `devDependencies` не существовало вовсе
+- Временный пробник `server/api/__config-probe.ts` удалён (лежал с первого коммита)
 
 ## Журнал сессий
+
+### 2026-10-02 — этап 7.2 (CI): теория, инструменты, разбор драфта workflow
+
+- **Теория:** зачем CI (третья машина, отзыв до ревью), словарь workflow/job/step/runner/event, config as code, `npm ci` vs `npm install`, typecheck vs build, версия Node, секреты в публичном репозитории
+- **Окружение:** локальный Node 20.19.0 не поддерживается Nuxt (`EBADENGINE`); ученик переключил nvm на **24.18.0** (npm 11.16.0). Число пакетов при том же lockfile изменилось 588 → 598: воспроизводимость даёт и версия инструмента, а не только lockfile
+- **Ловушка TypeScript 7:** `npm install -D typescript vue-tsc` поставил `typescript@7.0.2`, а `vue-tsc@3.3.12` грузит `typescript/lib/tsc` через `require.resolve`; TS 7 закрыл это поле `exports` → `ERR_PACKAGE_PATH_NOT_EXPORTED`. Откат на `typescript@5` (5.9.3) — `npm run typecheck` зелёный. Peer-диапазон `>=5.0.0` у `vue-tsc` соврал
+- **Сделано учеником:** `npm pkg set scripts.typecheck="nuxt typecheck"`; удалён `server/api/__config-probe.ts`
+- **Разбор драфта workflow:** job ≠ step — ученик написал три job'а (`CI`, `Types`, `Nuxt:build`), каждый на своей чистой VM без репозитория и `node_modules`; нужен **один job с тремя step**. Плюс ошибки: нет `actions/checkout` (на раннере нет кода), нет `actions/setup-node` (версия Node не наша), потерян триггер `pull_request`, id `Nuxt:build` с двоеточием — минное поле
+- **Решения:** версия Node — `.nvmrc` (читает `actions/setup-node`) + `engines` (декларация); CI — один job на `ubuntu-latest`, шаги `checkout → setup-node → npm ci → typecheck → build`, триггеры `push` + `pull_request`
+- **Срез не закрыт:** `.nvmrc`, `engines`, workflow и строка в `README` не созданы; `package.json`/`package-lock.json` изменены и не закоммичены (иначе `npm ci` в CI упадёт на рассинхроне lockfile)
 
 ### 2026-10-01 — checkpoint этапа 7
 
@@ -137,7 +150,11 @@
 - 2026-09-24 / процесс / цикл: теория → пересказ → задача → план → код ученика и ревью по ходу → контрольные → следующий этап. Заметки пишет ментор
 - 2026-09-24 / стек / Tailwind не в проекте; этап 14
 - 2026-10-01 / план / до этапа 8: CI, затем ESLint+Husky. Storybook — подэтап 9.1. Docker — 16.1. Mongo — только в этапе 17 вместе с серверным избранным
-- 2026-10-01 / процесс / перед задачей с новым API Nuxt ментор показывает пустой каркас файла и когда он выполняется. Логику среза пишет ученик
+- 2026-10-02 / процесс / при новом этапе — исчерпывающее объяснение всех концепций (включая базовые Vue/Nuxt), без каркасов и шаблонов кода: объяснение должно позволить ученику самому вывести состав файлов и написание. Обязательно сравнение наивного и идиоматичного пути. Код — только по прямому запросу ученика
+- 2026-10-02 / процесс / в чате: кратко, без очевидного и без пересказа того, что видно из git; доказательства — в `.agent/`, в чате максимум одна строка «команда → результат»
+- 2026-10-02 / этап 7.2 / CI: один job на `ubuntu-latest`, шаги `actions/checkout` → `actions/setup-node` (читает `.nvmrc`) → `npm ci` → `npm run typecheck` → `npm run build`; триггеры `push` + `pull_request`. Job'ы не делят файловую систему, поэтому три отдельных job'а означали бы три установки зависимостей
+- 2026-10-02 / стек / версия Node фиксируется двумя способами: `.nvmrc` — источник для CI, `engines` в `package.json` — декларация поддержки. nvm-windows `.nvmrc` не читает: локально переключение вручную
+- 2026-10-02 / стек / `typescript` запинен на `^5.9.3`: TypeScript 7 закрыл `exports` и ломает `vue-tsc` (`require.resolve("typescript/lib/tsc")` → `ERR_PACKAGE_PATH_NOT_EXPORTED`). Nuxt-проекты пока сидят на 5.x
 - 2026-09-12 / процесс / код пишет ученик
 
 ## Открытые вопросы
@@ -159,7 +176,11 @@
 - Почему `watch`, объявленный в `setup` страницы, теряет данные при переходах?
 - Когда cookie честнее `localStorage`?
 - Почему `onMounted` не работает в плагине и что использовать вместо него?
+- Почему в CI `npm ci`, а не `npm install`?
+- Чем job отличается от step и почему у них разная файловая система?
+- Зачем на раннере `actions/checkout`, если код уже в репозитории?
+- Почему проверка типов и сборка — два шага, а не один?
 
 ## Как продолжить в новом чате
 
-> Продолжаем этап 7, срез 1. Теория и ТЗ согласованы, кода нет: наполнить `app/composables/useFavorites.ts`, создать `app/plugins/favorites.client.ts` (папку `plagins` переименовать в `plugins`). Смотри `docs/PROGRESS.md`.
+> Продолжаем Open Music Player. Этап 7 закрыт, идём по **7.2 (CI)**: теория и инструменты уже готовы (Node 24.18.0, `vue-tsc` на `typescript@5.9.3`, `npm run typecheck` зелёный, связка «композабл ← плагин» для избранного готова). Осталось: `.nvmrc` + `engines`, файл в `.github/workflows/`, строка в `README`, затем пуш и проверка красного на намеренно сломанном типе. Workflow пишет ученик, ментор ревьюит. Смотри `docs/PROGRESS.md`.

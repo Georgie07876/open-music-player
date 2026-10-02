@@ -68,3 +68,9 @@ After an Implementer task: verify, then append one short entry to `.agent/observ
 
 - `/continue` — next course slice (Mentor)
 - `/implement` — execute an explicit coding request (Implementer)
+
+## Answer style
+
+- Russian, concise. Cut filler: no restating what the user can already see (git status, "files unchanged"), no obvious explanations.
+- Keep the conversation on the course: concepts, decisions, next action. Unrelated process detail is noise.
+- Evidence belongs in `.agent/observability.md` and `.agent/verification.md`; in chat at most one line: command → result.

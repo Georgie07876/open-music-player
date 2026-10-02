@@ -217,7 +217,39 @@
 - Новый чат на любом ПК читает git-harness, а не «как получится из промпта».
 - Не подключены MCP, RAG, eval-фреймворк — рано для размера репо.
 
-## 2026-10-01 — рабочая машина: диагностика окружения + этап 7, срез 1 (ментальная сессия)
+## 2026-10-02 — проверка закрытого среза 7.1 на домашней машине (harness)
+
+**Как было**
+- Срез 7.1 (persistence избранного) закрыт дома, репозиторий чистый (`a4f3cbf`), папка `plagins` удалена, файлы наполнены. `.nuxt/` оставался от 29.09 — то есть сгенерирован ещё до появления композабла.
+
+**Что сделал**
+- Только чтение и `npx nuxi prepare`. Код продукта не менял.
+- Поправил 3 устаревшие строки в `docs/PROGRESS.md` («Что уже есть», «Как продолжить»): они противоречили факту закрытого среза.
+
+**Что произошло (проверки: команда → результат)**
+- `git show --name-status a4f3cbf` → `D app/plagins/favorites.client.ts`, `A app/plugins/favorites.client.ts` — это перенос, а не вторая папка рядом.
+- `npx nuxi prepare` → «Types generated in .nuxt»; `git status` после — чисто (`.nuxt` в `.gitignore`).
+- `.nuxt/imports.d.ts:36` → `export { useFavorites } from '../app/composables/useFavorites';`
+- `.nuxt/types/plugins.d.ts:23` → `InjectionType<typeof import("../../app/plugins/favorites.client")>` — плагин реально подключён.
+- Дев-сервер не запущен (порт 3000 пуст), поэтому браузерные проверки DoD в этой сессии не воспроизводились.
+
+**Как есть сейчас**
+- Связка «композабл ← плагин» подтверждена по сгенерированным типам, а не «по виду кода».
+- Расхождение с согласованным ТЗ в `app/composables/useFavorites.ts`: нет `try/catch` вокруг `JSON.parse`, нет проверки `Array.isArray` и `removeItem`, ключ захардкожен дважды. DoD-чекбоксы этапа 7 в `docs/LEARNING.md` остались `[ ]`, при том что в `docs/PROGRESS.md` этап закрыт.
+
+**Открытые вопросы**
+- Оставить незащищённый `JSON.parse` до этапа 8 или закрыть мини-срезом сейчас (битый ключ способен уронить приложение).
+- Тикать ли DoD-чекбоксы этапа 7 в `docs/LEARNING.md`.
+
+## 2026-10-02 — микро-срез 7.1a: проверка предложенного кода + правка правил
+
+**Что сделал**
+- Проверил предложенный (не применённый) `useFavorites`: временный чек по образцу `.agent/checks/player-store.check.mjs` — реальный файл через `transformWithOxc`, стабы `useFavoritesStore` / `watch` / `useNuxtApp` / `localStorage`, 7 сценариев. Текущий код → 9 FAIL (throw в `app:mounted`, `tracks` стал строкой), предложенный → 17/17 PASS. Временные файлы удалены.
+- Обновил правила: `.cursor/rules/nuxt-mentor.mdc` и `.cursor/skills/mentor-session/SKILL.md` — исчерпывающее объяснение концепций вместо каркасов, никаких шаблонов кода; `AGENTS.md` — секция «Answer style» (без очевидного, доказательства в `.agent/`); `docs/PROGRESS.md` — решения 2026-10-02.
+- Код продукта не менял: `app/composables/useFavorites.ts` остался как есть, ждёт решения ученика.
+
+**Открытые вопросы**
+- Применять ли код микро-среза и переносить ли чек в `.agent/checks/use-favorites.check.mjs` (нужен явный запрос).
 
 **Как было**
 - Проект перенесён с домашней машины на рабочую, `npm install` сделан, но данные с API не приходили, а с включённым VPN сайт отдавал `ERR_CONNECTION_REFUSED`. Пользователь подозревал код/ключ API.
@@ -247,6 +279,32 @@
 **Открытые вопросы**
 - Переименует ли пользователь `app/plagins/` в `app/plugins/` сам (я `app/**` не трогал) — иначе плагин молча не подключится.
 - Дома IPv6-loopback, вероятно, жив, поэтому `--host` там может быть не нужен; проверить при первом запуске.
+
+## 2026-10-02 — этап 7.2 (CI): инструменты, ловушка TS 7, разбор драфта workflow
+
+**Как было**
+- 7.2 не начат: в `package.json` не было блока `devDependencies` и скрипта `typecheck`; каталога `.github/` не существовало; локальный Node 20.19.0 не поддерживается Nuxt (`EBADENGINE` на каждой установке).
+
+**Что сделал**
+- Теория CI (workflow/job/step/runner/event, config as code, `npm ci` vs `npm install`, typecheck vs build, версия Node, секреты в публичном репозитории) и разбор драфта workflow ученика. Workflow не писал — его пишет ученик.
+- Точечные проверки и правка окружения; обновил `docs/PROGRESS.md`, `.agent/decisions.md`, `.agent/verification.md`.
+
+**Что произошло (команда → результат)**
+- `node -v` → v24.18.0 (переключил ученик), `npm -v` → 11.16.0; `npm ci` → `EBADENGINE` исчез, `postinstall → nuxt prepare`, added 598 (на npm 10 и том же lockfile было 588).
+- `npm install -D typescript vue-tsc` → `typescript@7.0.2` + `vue-tsc@3.3.12`; `npm run typecheck` → `ERR_PACKAGE_PATH_NOT_EXPORTED: './lib/tsc'`. У TS 7 в `exports` только `./package.json`, `.`, `./unstable/*`.
+- `npm install -D typescript@5` → 5.9.3; `npm run typecheck` → пусто, `LASTEXITCODE=0`.
+- `npm ci` → `npm warn allow-scripts esbuild@0.28.2 (postinstall: node install.js)`; при этом `node_modules/esbuild/bin/esbuild` и `@esbuild/win32-x64/esbuild.exe` на месте (бинарь приходит платформенным пакетом, скрипт ни при чём).
+- GitHub API: `private: false` → Actions на стандартных раннерах бесплатен; `default_branch` = `main` (не `master`).
+- Драфт ученика: три job'а (`CI`, `Types`, `Nuxt:build`) — каждый на своей VM без checkout и без `node_modules`; триггер только `push`.
+- `git status` на момент фиксации: `M package.json`, `M package-lock.json`, `D server/api/__config-probe.ts` (удалил ученик), `M app/composables/useFavorites.ts` (микро-срез 7.1a), правки заметок и правил.
+
+**Как есть сейчас**
+- Инструменты стоят, `typecheck` зелёный, правок типов не потребовалось. Пайплайна нет: `.nvmrc`, `engines`, `.github/workflows/*.yml`, строка в `README` не созданы.
+- `npm install -D` меняет lockfile → коммитить вместе с `package.json`, иначе `npm ci` в CI упадёт на рассинхроне (ожидаемое поведение).
+
+**Открытые вопросы**
+- `.nvmrc`: точная версия (`24.18.0`) или линия (`24`) — решает ученик.
+- Секрет `audiusSecret` закоммичен в `nuxt.config.ts`; правильная форма (только env) — этап 10.
 
 
 
