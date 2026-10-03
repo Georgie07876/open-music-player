@@ -1,0 +1,13 @@
+---
+description: Hard limits for every agent in this repository
+alwaysApply: true
+---
+
+# Guardrails
+
+- Do not read, print, or copy `.env`, `.env.*`, or secret values from `nuxt.config.ts`.
+- Do not install Tailwind, Vitest, ESLint, or other stack extras unless the current stage in `docs/PROGRESS.md` requires it — or the user explicitly asks.
+- Do not commit, push, amend, or force-push unless the user asks.
+- Do not edit `docs/**` in Implementer mode. Mentor updates `docs/PROGRESS.md` after a closed course slice.
+- Destructive git (`reset --hard`, `clean -fd`, force push) is forbidden unless the user names that command.
+- Prove product changes: follow `.agent/verification.md`. “Looks correct” is not evidence.

@@ -1,8 +1,17 @@
-<script setup lang="ts"></script>
-
 <template>
   <div class="global-player">
-    <PlayerControls />
+    <div class="global-player__top">
+      <div v-if="playerStore.currentTrack" class="global-player__now">
+        <span class="global-player__title">{{
+          playerStore.currentTrack?.title
+        }}</span>
+        <span class="global-player__artist">{{
+          playerStore.currentTrack?.artist
+        }}</span>
+      </div>
+
+      <PlayerControls class="global-player__controls" />
+    </div>
 
     <div class="global-player__row">
       <button type="button" class="global-player__btn" aria-label="Mute">
@@ -41,6 +50,10 @@
   </div>
 </template>
 
+<script setup lang="ts">
+const playerStore = usePlayerStore();
+</script>
+
 <style scoped>
 .global-player {
   display: flex;
@@ -50,6 +63,38 @@
   padding: 0.6rem 1.25rem;
   border-top: 1px solid #ddd;
   background: #fff;
+}
+
+.global-player__top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+
+.global-player__controls {
+  grid-column: 2;
+}
+
+.global-player__now {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.global-player__title {
+  overflow: hidden;
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.global-player__artist {
+  overflow: hidden;
+  color: #666;
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .global-player__row {

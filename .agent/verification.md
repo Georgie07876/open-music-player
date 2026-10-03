@@ -43,7 +43,7 @@ node .check-sfc.tmp.mjs; Remove-Item .check-sfc.tmp.mjs -Force; 'temp removed: '
 
 ## 2. Страница живая end-to-end
 
-Dev-сервер обычно уже запущен на :3000 (`npm run dev`). Проверка без браузера:
+Dev-сервер обычно уже запущен на :3000 (`npm run dev`). Если на машине ломается IPv6-loopback (рабочий VPN), дев-сервер слушает только `[::1]` и браузер до него не дойдёт — тогда запускать `npm run dev -- --host 127.0.0.1` и проверять `http://127.0.0.1:3000`. Проверка без браузера:
 
 ```powershell
 try { $r = Invoke-WebRequest 'http://localhost:3000' -UseBasicParsing -TimeoutSec 90; 'status: ' + $r.StatusCode; 'matches: ' + (($r.Content | Select-String -Pattern 'global-player__timeline|aria-label="Mute"' -AllMatches).Matches.Value | Sort-Object -Unique) -join ' | ' } catch { 'REQUEST ERROR: ' + $_.Exception.Message; if ($_.Exception.Response) { 'status: ' + [int]$_.Exception.Response.StatusCode } }
@@ -62,6 +62,7 @@ foreach ($h in $hrefs) { $c = Invoke-WebRequest ('http://localhost:3000' + $h) -
 ```
 
 Адрес модуля стилей SFC в dev: `/_nuxt/<путь файла от корня Vite>?vue&type=style&index=0&lang.css`, например `/_nuxt/layouts/default.vue?vue&type=style&index=0&lang.css` для `app/layouts/default.vue`.
+JS-модуль того же компонента лежит рядом: `/_nuxt/<путь от каталога `app/`>` — например `/_nuxt/components/GlobalPlayer.vue` (проверено: 200, в теле есть `usePlayerStore` и `currentTrack`). Оба адреса отдают dev-сервер напрямую, без авторизации.
 Критерий: `status: 200` и в теле — актуальное правило (например `position: sticky`).
 Доказывает: браузер получает именно эти CSS-правила. Не доказывает: как браузер их применит при скролле — это смотрит пользователь.
 
@@ -83,6 +84,56 @@ Get-ChildItem app -Force | Select-Object Name,Length
 ```
 
 Критерий: появились только файлы заявленного объёма; временные скрипты удалены; чужие файлы не тронуты (сверить даты/состав до и после).
+
+## 4b. Runtime-тест стора (поведение, а не «выглядит правильно»)
+
+Скрипт: `.agent/checks/player-store.check.mjs`. Запуск:
+
+```powershell
+node .agent/checks/player-store.check.mjs
+```
+
+Что делает: компилирует `app/stores/player.ts` через esbuild → пишет временный `.check-store.transformed.tmp.mjs` в корень проекта → объявляет `globalThis.defineStore` (настоящий из `pinia`, потому что в Nuxt он автоимпортируется и в чистом node не существует) → импортирует модуль → создаёт Pinia и проверяет фактические значения, печатая `PASS/FAIL`.
+Критерий: `ALL CHECKS PASSED`, exit code `0`, временный файл удалён.
+Замечания: `transformWithEsbuild` в Vite 7 помечен deprecated (`transformWithOxc`) — предупреждение безвредно; esbuild нормализует литералы (`0.8` → `.8`), поэтому не проверяйте отданный код строками вида `volume: 0.8` — строковая проверка даст ложный `False`.
+
+## 4c. Persistence (этап 7): избранное ⇄ localStorage
+
+Автоматизации в браузере нет, поэтому часть проверок делает только пользователь.
+
+Доказуемо без браузера:
+
+```powershell
+# SSR отдаёт ПУСТОЕ избранное — это правильно (сервер не видит localStorage)
+# и одновременно доказательство, что mismatch'а нет by design
+(Invoke-WebRequest 'http://127.0.0.1:3000/favorites' -UseBasicParsing).StatusCode
+
+# композабл попал в автоимпорт (у 0-байтного файла экспорта нет)
+npx nuxi prepare
+Select-String -Path .nuxt/imports.d.ts -Pattern 'useFavorites(?!Store)'
+
+# плагин вообще попал в сборку (каталог обязан называться `plugins`)
+Select-String -Path .nuxt/types/plugins.d.ts -Pattern 'favorites'
+
+# DoD «компоненты не знают про localStorage»
+git diff --stat -- app/components app/stores
+```
+
+Критерий: `/favorites` отвечает 200 с пустым состоянием; `useFavorites` есть в `imports.d.ts`; плагин есть в `plugins.d.ts`; `git diff` по компонентам и стору пуст.
+
+Только в браузере (пользователь): ключ появился в DevTools → Application → Local Storage; ♥ переживают F5; **подписка жива** — ♥ на `/search` после перехода без F5 тоже сохраняются; в консоли нет `[Vue warn] Hydration`; испорченный ключ (`"hello"`) не роняет приложение.
+
+## 4d. Пайплайн и типы (этап 7.2)
+
+```powershell
+npm run typecheck   # локально: пусто и exit 0
+npm ci              # то, что запускает CI; ловит рассинхрон lockfile
+```
+
+Критерий локально: `npm run typecheck` → exit 0 (проверено 2026-10-02, правка типов не нужна).
+Критерий в репозитории: файл в `.github/workflows/`, строка про пайплайн в `README`, `package.json` и `package-lock.json` закоммичены вместе.
+Критерий того, что шаг реально проверяет: намеренно сломанный тип (например, присвоить `volume` строку) → пайплайн красный → откатить поломку. Пока это не проверено, «пайплайн работает» не считается доказанным.
+Ограничение: скриншот зелёного/красного статуса в CI с моей стороны не проверяем — нужен URL run или вывод из интерфейса GitHub.
 
 ## 5. Что доказательством НЕ считается
 
