@@ -306,6 +306,58 @@
 - `.nvmrc`: точная версия (`24.18.0`) или линия (`24`) — решает ученик.
 - Секрет `audiusSecret` закоммичен в `nuxt.config.ts`; правильная форма (только env) — этап 10.
 
+## 2026-10-03 — домашний ноутбук: окружение под CI (этап 7.2, код не начат)
+
+**Как было**
+- Перенос с рабочей машины. nvm-windows знал только Node 22.17.0 — ниже `^22.19.0` из `engines` Nuxt 4.5.2. В `node_modules` не было `typescript`/`vue-tsc`, поэтому `npm run typecheck` падал с «A type checker is required». В репозитории нет `.nvmrc`, `engines`, `.github/`, строки в README. Дев-сервер был уже запущен (`npm run dev`, 5 node-процессов с 11:15).
+
+**Что сделал**
+- Проверил в исходниках Nuxt: неподдерживаемый Node — не падение, а `logger.warn` (`@nuxt/cli/dist/index.mjs`, `checkEngines`); у npm при `engine-strict=false` тоже только `EBADENGINE`.
+- Ученик выбрал `.nvmrc` = точная `24.18.0`. Поставил: `nvm install 24.18.0`, `nvm use 24.18.0`.
+- `npm ci` дважды упал на Windows: `EPERM`, затем `ENOTEMPTY` на `node_modules\anymatch\node_modules` (каталог держал запущенный дев-сервер; поверх файловые вотчеры VS Code, 17 процессов). Остановил дев-сервер, снёс каталог `rmdir /s /q node_modules`, переустановил `npm ci` в фоне.
+- Перезапустил дев-сервер (после смены Node он работал бы на прежней версии).
+
+**Что произошло (команда → результат)**
+- `nvm install/use 24.18.0` → `node -v` v24.18.0, `npm -v` 11.16.0.
+- `npm ci` → `added 597 packages, and audited 599 packages in 43s`; `EBADENGINE` в логе нет (на рабочей машине было 598 при тех же версиях инструментов).
+- `npm run typecheck` → пусто, `EXIT=0`.
+- `GET http://localhost:3000` → 200, в SSR-HTML `global-player__timeline`, `Open Music Player`; `GET http://127.0.0.1:3000/favorites` → отказ в соединении (Nitro слушает только `[::1]`).
+
+**Как есть сейчас**
+- Окружение домашней машины удовлетворяет `engines` Nuxt; `git status` чистый. Дома IPv6-loopback жив, обход `--host 127.0.0.1` не нужен.
+- `.nvmrc`, `engines`, `.github/workflows/`, строка в README всё ещё не созданы — срез 7.2 открыт.
+
+## 2026-10-03 (продолжение) — срез 7.2: ученик собрал ci.yml, шаг 4 (README) закрыл я
+
+**Как было**
+- `.nvmrc` (`24.18.0`), `engines: ^24.11.0` и `.github/workflows/ci.yml` ученик создал сам после разбора пяти ошибок драфта (`echo` в `uses`, `steps` пять раз, `npm typecheck`/`nuxt build`, отступы, вложенный `jobs`). `README` был без строки про пайплайн.
+
+**Что сделал я (шаг 4, по прямой просьбе ученика)**
+- Вставил в `README.md` секцию `## CI` сразу после заголовка: одна фраза про `npm ci` → `npm run typecheck` → `npm run build` в `.github/workflows/ci.yml`.
+
+**Что произошло (команда → результат)**
+- Расширение GitHub Actions в VS Code дало ложную диагностику «Unable to resolve action `actions/checkout@v7` / `setup-node@v7`, repository or version not found». Проверено тремя способами: `api.github.com/.../releases/latest` → `v7.0.1` (2026-07-20) и `v7.0.0` (2026-07-14); `api.github.com/.../tags` → движущийся тег `v7` у обоих; `git ls-remote --tags https://github.com/actions/checkout.git v7` → `3d3c42e5…refs/tags/v7`, `…/setup-node.git v7` → `8207627860…refs/tags/v7`. Теги существуют — диагностика редактора ложная.
+- `cSpell` ругается на `nvmrc` — шум спелчекера, к CI отношения не имеет.
+
+**Как есть сейчас**
+- Четыре файла на месте, но не закоммичены: `M package.json` (+`engines`), `?? .nvmrc`, `?? .github/`, `M README.md`. Пайплайн не запускался (`Actions` в репозитории пуст).
+- Следующий шаг: коммит + `git push origin dev` → зелёный прогон → ломаем тип → красный → откат.
+
+## 2026-10-03 (продолжение 2) — CI зелёный, первый прогон
+
+**Как было**
+- Четыре файла (`.nvmrc`, `engines`, `.github/workflows/ci.yml`, `README`) не были закоммичены; пайплайн ни разу не запускался.
+
+**Что произошло (команда → результат)**
+- Ученик закоммитил и запушил в `dev` (SHA `b11e04f`). UI: два зелёных прогона.
+- Проверено независимо через `api.github.com/repos/Georgie07876/open-music-player/actions/runs` → `total_count: 2`: run #2 `id 37116671362`, event `pull_request`, `head_branch dev`, `conclusion success`, привязан к PR #1 (`dev` → `main`, base SHA `617c4bb`); run #1 — push-trigger. Оба триггера подтверждены живыми.
+- Диагностика расширения VS Code про `@v7` на раннере не воспроизвелась — теги поставились нормально.
+
+**Как есть сейчас**
+- DoD 7.2: пункт «пайплайн есть и описан в README» закрыт, «триггеры push + pull_request» подтверждены прогонами.
+- Остался пункт «намеренно сломанный тип роняет проверку». Ветка `dev` теперь под открытым PR #1, поэтому каждый push даст **два** прогона (push и pull_request).
+- Секретов workflow не использует вовсе, поэтому риск утечки в лог нулевой by design. Дополнительно проверено локально: `npm run build` → `Build complete!` (`.output` 2.21 MB); `Select-String` по `audiusSecret` и по `audiusKey` в логе сборки → **0 совпадений**. `nuxt build` значения runtime config не печатает.
+
 
 
 
