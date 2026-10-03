@@ -1,5 +1,9 @@
 # Nuxt Minimal Starter
 
+## CI
+
+Every push and pull request runs GitHub Actions (`.github/workflows/ci.yml`): `npm ci`, `npm run typecheck`, `npm run build`.
+
 Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
 ## Setup
