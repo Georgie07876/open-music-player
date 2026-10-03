@@ -5,7 +5,7 @@ export const usePlayerStore = defineStore("player", {
     currentTrack: null as Track | null,
     isPlaying: false,
     queue: <Track[]>[],
-    volume: 0.8,
+    volume: "loud" | Number,
   }),
   actions: {
     playTrack(track: Track) {
